@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false)
-      if (formData.email === "admin@trekmate.com" && formData.password === "admin123") {
+      if (formData.email === "admin@gmail.com" && formData.password === "admin123") {
         toast({
           title: "Admin Login Successful!",
           description: "Welcome to TrekMate Admin Panel",
