@@ -1,444 +1,365 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, MapPin, Star, Clock, User, Bell, Settings, LogOut } from "lucide-react"
-import Image from "next/image"
+import { Mountain, MapPin, Calendar, Star, Bell, Settings, LogOut, Bookmark, CheckCircle } from "lucide-react"
 import Link from "next/link"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+import { useToast } from "@/hooks/use-toast"
 
-export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("overview")
+interface Booking {
+  id: number
+  destination: string
+  type: "Accommodation" | "Transportation"
+  service: string
+  date: string
+  status: "confirmed" | "pending" | "completed"
+  amount: string
+  rating?: number
+}
 
-  // Mock user data
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+977-9800000000",
-    joinDate: "January 2024",
-    totalBookings: 3,
-    upcomingTrips: 1,
-  }
+export default function UserDashboard() {
+  const { user, token, logout, loading } = useAuth()
+  const router = useRouter()
+  const { toast } = useToast()
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const upcomingBookings = [
-    {
-      id: 1,
-      destination: "Everest Base Camp",
-      accommodation: "Everest View Hotel",
-      checkIn: "2024-03-15",
-      checkOut: "2024-03-17",
-      status: "Confirmed",
-      image: "/placeholder.svg?height=100&width=150",
-    },
-  ]
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth/login")
+    }
+  }, [user, loading, router])
 
-  const pastBookings = [
-    {
-      id: 2,
-      destination: "Annapurna Circuit",
-      accommodation: "Mountain Paradise Lodge",
-      checkIn: "2024-01-10",
-      checkOut: "2024-01-12",
-      status: "Completed",
-      rating: 5,
-      image: "/placeholder.svg?height=100&width=150",
-    },
-    {
-      id: 3,
-      destination: "Langtang Valley",
-      accommodation: "Sherpa Lodge",
-      checkIn: "2023-12-05",
-      checkOut: "2023-12-07",
-      status: "Completed",
-      rating: 4,
-      image: "/placeholder.svg?height=100&width=150",
-    },
-  ]
+  useEffect(() => {
+    if (user && token) {
+      const fetchBookings = async () => {
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/booking/acc/user/${user.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (response.ok) {
+            const data = await response.json()
+            setBookings(data || [])
+          }
+        } catch (error) {
+          console.log("[v0] Error fetching bookings:", error)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      fetchBookings()
+    }
+  }, [user, token])
 
-  const notifications = [
-    {
-      id: 1,
-      type: "booking",
-      message: "Your booking at Everest View Hotel has been confirmed",
-      time: "2 hours ago",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "reminder",
-      message: "Don't forget to pack your trekking gear for your upcoming trip",
-      time: "1 day ago",
-      read: false,
-    },
-    {
-      id: 3,
-      type: "review",
-      message: "Please review your stay at Mountain Paradise Lodge",
-      time: "3 days ago",
-      read: true,
-    },
-  ]
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Confirmed":
-        return "bg-green-100 text-green-800"
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "Completed":
-        return "bg-blue-100 text-blue-800"
-      case "Cancelled":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  const handleCancelBooking = async (bookingId: number) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/booking/${bookingId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.ok) {
+        setBookings(bookings.filter((b) => b.id !== bookingId))
+        toast({
+          title: "Booking Cancelled",
+          description: "Your booking has been cancelled successfully.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel booking",
+        variant: "destructive",
+      })
     }
   }
 
+  if (loading || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Mountain className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const upcomingBookings = bookings.filter((b) => b.status === "pending" || b.status === "confirmed")
+  const completedBookings = bookings.filter((b) => b.status === "completed")
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      {/* Header */}
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Mountain className="h-8 w-8 text-blue-600" />
+            <span className="text-2xl font-bold text-gray-900">TrekMate</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm">
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Avatar>
+              <AvatarImage src="/placeholder-user.jpg" />
+              <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                logout()
+                toast({
+                  title: "Logged out",
+                  description: "You have been logged out successfully",
+                })
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {user.name}!</h1>
-          <p className="text-gray-600">Manage your bookings and plan your next adventure</p>
+          <p className="text-gray-600">Manage your bookings and discover new adventures</p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Quick Stats */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-blue-600 mr-3" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{user.upcomingTrips}</p>
-                  <p className="text-sm text-gray-600">Upcoming Trips</p>
+                  <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                  <p className="text-2xl font-bold">{bookings.length}</p>
                 </div>
+                <Calendar className="h-8 w-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center">
-                <MapPin className="h-8 w-8 text-green-600 mr-3" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{user.totalBookings}</p>
-                  <p className="text-sm text-gray-600">Total Bookings</p>
+                  <p className="text-sm font-medium text-gray-600">Completed Treks</p>
+                  <p className="text-2xl font-bold">{completedBookings.length}</p>
                 </div>
+                <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center">
-                <Star className="h-8 w-8 text-yellow-600 mr-3" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">4.8</p>
-                  <p className="text-sm text-gray-600">Avg Rating Given</p>
+                  <p className="text-sm font-medium text-gray-600">Upcoming Bookings</p>
+                  <p className="text-2xl font-bold">{upcomingBookings.length}</p>
                 </div>
+                <Bookmark className="h-8 w-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>
-
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center">
-                <User className="h-8 w-8 text-purple-600 mr-3" />
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{user.joinDate}</p>
-                  <p className="text-sm text-gray-600">Member Since</p>
+                  <p className="text-sm font-medium text-gray-600">Account Status</p>
+                  <p className="text-lg font-bold text-green-600">Active</p>
                 </div>
+                <Star className="h-8 w-8 text-yellow-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
+        <Tabs defaultValue="upcoming" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="upcoming">Upcoming Bookings</TabsTrigger>
+            <TabsTrigger value="history">Booking History</TabsTrigger>
+            <TabsTrigger value="explore">Explore</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Upcoming Bookings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    Upcoming Trips
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {upcomingBookings.length > 0 ? (
-                    <div className="space-y-4">
-                      {upcomingBookings.map((booking) => (
-                        <div key={booking.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                          <div className="relative w-20 h-16 flex-shrink-0">
-                            <Image
-                              src={booking.image || "/placeholder.svg"}
-                              alt={booking.accommodation}
-                              fill
-                              className="object-cover rounded"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold">{booking.destination}</h4>
-                            <p className="text-sm text-gray-600">{booking.accommodation}</p>
-                            <p className="text-xs text-gray-500">
-                              {booking.checkIn} to {booking.checkOut}
-                            </p>
-                          </div>
-                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No upcoming trips</p>
-                      <Button asChild className="mt-4">
-                        <Link href="/destinations">Plan Your Next Adventure</Link>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Clock className="h-5 w-5 mr-2" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {pastBookings.slice(0, 3).map((booking) => (
-                      <div key={booking.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        <div className="relative w-16 h-12 flex-shrink-0">
-                          <Image
-                            src={booking.image || "/placeholder.svg"}
-                            alt={booking.accommodation}
-                            fill
-                            className="object-cover rounded"
-                          />
-                        </div>
+          <TabsContent value="upcoming" className="space-y-6">
+            {upcomingBookings.length > 0 ? (
+              <div className="grid gap-6">
+                {upcomingBookings.map((booking) => (
+                  <Card key={booking.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium">{booking.destination}</h4>
-                          <p className="text-sm text-gray-600">{booking.accommodation}</p>
-                          <div className="flex items-center mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < booking.rating ? "text-yellow-400 fill-current" : "text-gray-300"
-                                }`}
-                              />
-                            ))}
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{booking.service}</h3>
+                            <Badge variant={booking.status === "confirmed" ? "default" : "secondary"}>
+                              {booking.status}
+                            </Badge>
                           </div>
-                        </div>
-                        <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="bookings" className="space-y-6">
-            <div className="space-y-6">
-              {/* Upcoming Bookings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Bookings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {upcomingBookings.length > 0 ? (
-                    <div className="space-y-4">
-                      {upcomingBookings.map((booking) => (
-                        <div key={booking.id} className="border rounded-lg p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="text-lg font-semibold">{booking.destination}</h3>
-                              <p className="text-gray-600">{booking.accommodation}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {booking.destination}
                             </div>
-                            <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                          </div>
-                          <div className="grid md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                              <p className="text-sm text-gray-600">Check-in</p>
-                              <p className="font-medium">{booking.checkIn}</p>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {booking.date}
                             </div>
-                            <div>
-                              <p className="text-sm text-gray-600">Check-out</p>
-                              <p className="font-medium">{booking.checkOut}</p>
-                            </div>
+                            <Badge variant="outline">{booking.type}</Badge>
                           </div>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              View Details
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Cancel Booking
-                            </Button>
-                          </div>
+                          <p className="text-lg font-semibold text-blue-600">{booking.amount}</p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No upcoming bookings</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Past Bookings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Past Bookings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {pastBookings.map((booking) => (
-                      <div key={booking.id} className="border rounded-lg p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold">{booking.destination}</h3>
-                            <p className="text-gray-600">{booking.accommodation}</p>
-                          </div>
-                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                        </div>
-                        <div className="grid md:grid-cols-3 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-gray-600">Check-in</p>
-                            <p className="font-medium">{booking.checkIn}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Check-out</p>
-                            <p className="font-medium">{booking.checkOut}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Your Rating</p>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${
-                                    i < booking.rating ? "text-yellow-400 fill-current" : "text-gray-300"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
                             View Details
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button variant="destructive" size="sm" onClick={() => handleCancelBooking(booking.id)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">No upcoming bookings</p>
+                  <Button asChild>
+                    <Link href="/destinations">Browse Destinations</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            {completedBookings.length > 0 ? (
+              <div className="grid gap-6">
+                {completedBookings.map((booking) => (
+                  <Card key={booking.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{booking.service}</h3>
+                            <Badge variant="secondary">{booking.status}</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {booking.destination}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {booking.date}
+                            </div>
+                            <Badge variant="outline">{booking.type}</Badge>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <p className="text-lg font-semibold text-gray-900">{booking.amount}</p>
+                            {booking.rating && (
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-4 w-4 ${
+                                      i < booking.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">
+                            View Receipt
+                          </Button>
+                          <Button variant="outline" size="sm">
                             Book Again
                           </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <CheckCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600">No completed bookings yet</p>
                 </CardContent>
               </Card>
-            </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Bell className="h-5 w-5 mr-2" />
-                  Notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-4 border rounded-lg ${
-                        !notification.read ? "bg-blue-50 border-blue-200" : "bg-white"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className={`${!notification.read ? "font-medium" : ""}`}>{notification.message}</p>
-                          <p className="text-sm text-gray-500 mt-1">{notification.time}</p>
-                        </div>
-                        {!notification.read && <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>}
+          <TabsContent value="explore" className="space-y-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  name: "Manaslu Circuit",
+                  district: "Gorkha",
+                  image: "/placeholder.svg?height=200&width=300&text=Manaslu+Circuit",
+                  rating: 4.7,
+                },
+                {
+                  name: "Upper Mustang",
+                  district: "Mustang",
+                  image: "/placeholder.svg?height=200&width=300&text=Upper+Mustang",
+                  rating: 4.8,
+                },
+                {
+                  name: "Gokyo Lakes",
+                  district: "Solukhumbu",
+                  image: "/placeholder.svg?height=200&width=300&text=Gokyo+Lakes",
+                  rating: 4.9,
+                },
+              ].map((destination, index) => (
+                <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-48">
+                    <img
+                      src={destination.image || "/placeholder.svg"}
+                      alt={destination.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{destination.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{destination.rating}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Profile Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                      <p className="text-gray-900">{user.name}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <p className="text-gray-900">{user.email}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <p className="text-gray-900">{user.phone}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Member Since</label>
-                      <p className="text-gray-900">{user.joinDate}</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-4 pt-4">
-                    <Button variant="outline">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Edit Profile
+                    <p className="text-sm text-gray-600 mb-3">{destination.district}</p>
+                    <Button className="w-full" size="sm" asChild>
+                      <Link href={`/destinations/${index}`}>View Details</Link>
                     </Button>
-                    <Button variant="outline">Change Password</Button>
-                    <Button variant="destructive">
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
-
-      <Footer />
     </div>
   )
 }
