@@ -58,8 +58,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     <div className="flex items-center gap-8">
                         <h1 className="text-2xl font-bold">TrekMate Admin</h1>
                         <div className="flex gap-4">
-                            <Link href="/admin/destinations">
-                                <Button variant="ghost">Destinations</Button>
+                            <Link href="/admin">
+                                <Button variant="ghost">Home</Button>
+                            </Link>
+                            <Link href="/admin/accomodations">
+                                <Button variant="ghost">Accomodations</Button>
                             </Link>
                             <Link href="/admin/bookings">
                                 <Button variant="ghost">Bookings</Button>

@@ -1,165 +1,169 @@
 "use client"
 
-import type React from "react"
+import { useEffect, useState } from "react"
+import { Calendar, CreditCard, User } from "lucide-react"
+import api from "@/lib/api"
+import { toast } from "react-toastify"
 
-import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, CheckCircle } from "lucide-react"
+interface BookingFormProps {
+    accomodationId: number
+    price: number
+    name: string
+}
 
-export function BookingForm() {
-    const searchParams = useSearchParams()
-    const accommodationId = searchParams.get("accommodation")
-    const router = useRouter()
-    const [checkInDate, setCheckInDate] = useState("")
-    const [checkOutDate, setCheckOutDate] = useState("")
-    const [error, setError] = useState<string | null>(null)
-    const [success, setSuccess] = useState(false)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+export default function BookingForm({ accomodationId, price, name }: BookingFormProps) {
+    const [startingDate, setStartingDate] = useState("")
+    const [endingDate, setEndingDate] = useState("")
+    const [loading, setLoading] = useState(false)
+    const [message, setMessage] = useState("")
+    const [userId, setUserId] = useState<number | null>(null)
 
+    useEffect(() => {
+        const storedUserId = localStorage.getItem("id")
+        if (storedUserId) {
+            setUserId(parseInt(storedUserId))
+        }
+    }, [])
 
-
-
-
-
-
-    const calculateDays = () => {
-        if (!checkInDate || !checkOutDate) return 0
-        const start = new Date(checkInDate)
-        const end = new Date(checkOutDate)
-        return Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
+    const calculateTotal = () => {
+        if (!startingDate || !endingDate) return 0
+        const start = new Date(startingDate)
+        const end = new Date(endingDate)
+        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        return days > 0 ? days * price : 0
     }
 
-    const totalPrice = calculateDays() * (4)
+    const calculateNights = () => {
+        if (!startingDate || !endingDate) return 0
+        const start = new Date(startingDate)
+        const end = new Date(endingDate)
+        return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleBooking = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError(null)
-        setSuccess(false)
+        setLoading(true)
+        setMessage("")
 
-
-        if (calculateDays() === 0) {
-            setError("Please select valid check-in and check-out dates")
+        // Validate dates
+        if (new Date(endingDate) <= new Date(startingDate)) {
+            setMessage("Ending date must be after starting date")
+            setLoading(false)
             return
         }
 
-        setIsSubmitting(true)
         try {
-            //   await BookingsService.createBooking({
-            //     user_id: user.id,
-            //     accommodation_id: accommodationId,
-            //     check_in_date: checkInDate,
-            //     check_out_date: checkOutDate,
-            //     total_price: totalPrice,
-            //     status: "pending",
-            //   })
-            setSuccess(true)
-            setTimeout(() => router.push("/dashboard"), 2000)
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Booking failed"
-            setError(message)
+            const response = await api.post('/user/accomodation/book', {
+                accomodationId,
+                startingDate,
+                endingDate,
+                // Remove totalPrice and userId as your backend doesn't expect them
+                // totalPrice: calculateTotal(),
+                // userId: userId,
+            })
+
+            toast.success("Booking created successfully!")
+            setMessage("Booking created successfully!")
+            setStartingDate("")
+            setEndingDate("")
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.error || 'Failed to create booking'
+            setMessage(errorMessage)
+            toast.error(errorMessage)
         } finally {
-            setIsSubmitting(false)
+            setLoading(false)
         }
     }
 
+    const total = calculateTotal()
+    const nights = calculateNights()
+
     return (
-        <div className="max-w-2xl mx-auto p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Accommodation Info */}
-                <div className="md:col-span-1">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">{accommodationId}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div>
-                                <Label className="text-gray-600 text-sm">Location</Label>
-                                <p className="font-medium">{accommodationId}</p>
-                            </div>
-                            <div>
-                                <Label className="text-gray-600 text-sm">Price per Night</Label>
-                                <p className="text-2xl font-bold">Rs {accommodationId}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+        <div className="bg-card rounded-2xl border shadow-sm p-6">
+            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Book Now
+            </h3>
+
+            <form onSubmit={handleBooking} className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                    <User className="h-4 w-4" />
+                    <label className="block text-sm font-medium">
+                        Accommodation
+                    </label>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{name}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4" />
+                            <label className="block text-sm font-medium">
+                                Starting Date
+                            </label>
+                        </div>
+                        <input
+                            type="date"
+                            value={startingDate}
+                            onChange={(e) => setStartingDate(e.target.value)}
+                            className="w-full p-3 border rounded-lg bg-background"
+                            required
+                            min={new Date().toISOString().split('T')[0]}
+                        />
+                    </div>
+
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4" />
+                            <label className="block text-sm font-medium">
+                                Ending Date
+                            </label>
+                        </div>
+                        <input
+                            type="date"
+                            value={endingDate}
+                            onChange={(e) => setEndingDate(e.target.value)}
+                            className="w-full p-3 border rounded-lg bg-background"
+                            required
+                            min={startingDate || new Date().toISOString().split('T')[0]}
+                        />
+                    </div>
                 </div>
 
-                {/* Booking Form */}
-                <div className="md:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Complete Your Booking</CardTitle>
-                            <CardDescription>Select your dates and review the total</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                {error && (
-                                    <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {error}
-                                    </div>
-                                )}
+                {total > 0 && (
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between">
+                            <span>Price per night:</span>
+                            <span>${price}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Nights:</span>
+                            <span>{nights}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold border-t pt-2">
+                            <span>Total:</span>
+                            <span>${total}</span>
+                        </div>
+                    </div>
+                )}
 
-                                {success && (
-                                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 p-3 rounded">
-                                        <CheckCircle className="w-4 h-4" />
-                                        Booking created successfully! Redirecting...
-                                    </div>
-                                )}
+                <button
+                    type="submit"
+                    disabled={loading || !startingDate || !endingDate || nights <= 0}
+                    className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    {loading ? "Booking..." : "Confirm Booking"}
+                </button>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="check-in">Check-in Date</Label>
-                                    <Input
-                                        id="check-in"
-                                        type="date"
-                                        value={checkInDate}
-                                        onChange={(e) => setCheckInDate(e.target.value)}
-                                        required
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="check-out">Check-out Date</Label>
-                                    <Input
-                                        id="check-out"
-                                        type="date"
-                                        value={checkOutDate}
-                                        onChange={(e) => setCheckOutDate(e.target.value)}
-                                        required
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
-
-                                {calculateDays() > 0 && (
-                                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Number of Nights:</span>
-                                            <span className="font-semibold">{calculateDays()}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Price per Night:</span>
-                                            <span className="font-semibold">Rs {accommodationId?.toLocaleString()}</span>
-                                        </div>
-                                        <div className="border-t pt-2 flex justify-between text-lg">
-                                            <span className="font-semibold">Total:</span>
-                                            <span className="font-bold text-blue-600">Rs {totalPrice.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <Button type="submit" className="w-full" disabled={isSubmitting || calculateDays() === 0}>
-                                    {isSubmitting ? "Processing..." : "Confirm Booking"}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                {message && (
+                    <p className={`text-sm text-center ${message.includes('successfully')
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                        }`}>
+                        {message}
+                    </p>
+                )}
+            </form>
         </div>
     )
 }

@@ -29,7 +29,7 @@ export function LoginForm() {
         try {
             const response = await api.post("/login", { email, password });
             const token = response.data.token;
-            const name = response.data.name;
+            const name = response.data.userName;
             const id = response.data.userId;
             const role = response.data.role;
             localStorage.setItem("token", token);
@@ -37,13 +37,13 @@ export function LoginForm() {
             localStorage.setItem("id", id);
             localStorage.setItem("role", role);
             toast.success("Logged in successfully!");
-            // if (role === "admin") {
-            //     navigate.push("/admin/dashboard");
+            if (role === "admin") {
+                navigate.push("/admin/");
 
-            // } else {
-            //     navigate.push("/user/dashboard");
-            // }
-            navigate.push("/admin");
+            } else {
+                navigate.push("/user/");
+            }
+            // navigate.push("/admin");
 
         } catch (error) {
             console.error(error);

@@ -1,49 +1,76 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle } from "lucide-react"
-import Link from "next/link"
-import api from "@/lib/api"
-import { toast } from "react-toast"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import api from "@/lib/api"; // Axios instance
 
 export function SignupForm() {
-    const [name, setName] = useState("")
-    const [email, setEmail] = useState("")
-    const [phone, setPhone] = useState("")
-    const [password, setPassword] = useState("")
-    const [confirmPassword, setConfirmPassword] = useState("")
-    const [role, setRole] = useState("user")
-    const [passwordError, setPasswordError] = useState("")
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const navigate = useRouter();
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [role, setRole] = useState("user");
+    const [file, setFile] = useState<File | null>(null);
+    const [passwordError, setPasswordError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         setError(null);
+        setPasswordError("");
+
+        if (password !== confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        }
+
+        if (!file) {
+            setError("Profile image is required");
+            return;
+        }
+
+        setIsLoading(true);
 
         try {
-            const response = await api.post("/signup", { email, password, name, phone, role });
-            toast.success("Logged in successfully!");
-            navigate.push("/auth/login");
-        } catch (error) {
-            console.error(error);
-            setError("Invalid email or password.");
-            toast.error("Login failed. Please check your credentials.");
+            const formData = new FormData();
+            formData.append("name", name);
+            formData.append("email", email);
+            formData.append("phone", phone);
+            formData.append("password", password);
+            formData.append("role", role);
+
+            // FIX: Append the file with the correct field name that your backend expects
+            formData.append("images", file); // Your backend expects "images" field
+
+            const response = await api.post("/signup", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            toast.success("Account created successfully!");
+            router.push("/auth/login");
+        } catch (err: any) {
+            console.error("Signup error:", err);
+            const errorMessage = err.response?.data?.error || "Signup failed. Please try again.";
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
+
     return (
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md mx-auto">
             <CardHeader>
                 <CardTitle>Create Account</CardTitle>
                 <CardDescription>Join TrekMate to start booking your adventures</CardDescription>
@@ -97,6 +124,19 @@ export function SignupForm() {
                     </div>
 
                     <div className="space-y-2">
+                        <Label htmlFor="image">Profile Image *</Label>
+                        <Input
+                            id="image"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                            required
+                            disabled={isLoading}
+                        />
+                        <p className="text-xs text-muted-foreground">Profile image is required</p>
+                    </div>
+
+                    <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
                         <Input
                             id="password"
@@ -106,6 +146,7 @@ export function SignupForm() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             disabled={isLoading}
+                            minLength={6}
                         />
                     </div>
 
@@ -136,5 +177,5 @@ export function SignupForm() {
                 </form>
             </CardContent>
         </Card>
-    )
+    );
 }
