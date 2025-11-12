@@ -11,6 +11,7 @@ export interface DestinationData {
   destination: Destination;
   image: Image | null;
   accomodation: Accomodation;
+  transportation: Transportation;
 }
 
 export interface Destination {
@@ -65,6 +66,21 @@ export interface UserData {
   role: string;
   phone: string;
   isValidEmail: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TransportationData {
+  transportation: Transportation;
+  image: Image;
+}
+
+export interface Transportation {
+  id: number;
+  destinationId: number;
+  price: number;
+  grade: string;
+  vechileTypeId: number;
   createdAt: Date;
   updatedAt: Date;
 }

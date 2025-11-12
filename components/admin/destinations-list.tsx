@@ -99,7 +99,7 @@ export function DestinationsList() {
     };
     const deleteDestination = async (id: number) => {
         try {
-            const response = await api.delete(`/admin/destination/destination/${id}`);
+            const response = await api.delete(`/admin/destination/delete/${id}`);
             toast.success("Destination deleted successfully!");
             fetchDestinations();
         } catch (err: any) {

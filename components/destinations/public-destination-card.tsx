@@ -10,11 +10,10 @@ interface DestinationCardProps {
     name: string
     description: string
     location: string
-    price: number
     images?: string[]
 }
 
-export function PublicDestinationCard({ id, name, description, location, price, images }: DestinationCardProps) {
+export function PublicDestinationCard({ id, name, description, location, images }: DestinationCardProps) {
     return (
         <Card className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="relative">
@@ -23,10 +22,6 @@ export function PublicDestinationCard({ id, name, description, location, price, 
                     alt={name}
                     className="w-full h-64 object-cover"
                 />
-                <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full flex items-center gap-1">
-                    <DollarSign className="h-4 w-4" />
-                    <span className="font-bold">{price}</span>
-                </div>
             </div>
 
             <div className="p-4 space-y-3">

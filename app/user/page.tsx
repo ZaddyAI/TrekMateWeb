@@ -1,5 +1,4 @@
 "use client"
-
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -8,14 +7,15 @@ import Link from "next/link"
 import api from "@/lib/api"
 import { DestinationData } from "@/types/types"
 import { PublicDestinationCard } from "@/components/destinations/public-destination-card"
-import page from "./booking/page"
 
 export default function DashboardPage() {
     const router = useRouter()
     const [destinations, setDestinations] = useState<DestinationData[]>([])
+    const [filteredDestinations, setFilteredDestinations] = useState<DestinationData[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [user, setUser] = useState("Guest")
+    const [searchQuery, setSearchQuery] = useState("")
 
     useEffect(() => {
         const storedUser = localStorage.getItem("user")
@@ -34,12 +34,15 @@ export default function DashboardPage() {
         setLoading(true)
         setError("")
         try {
-
             const response = await api.get("/destinations");
             if (Array.isArray(response.data)) {
-                setDestinations(response.data)
+                // Sort destinations by name for binary search
+                const sortedData = response.data.sort((a, b) => a.destination.name.localeCompare(b.destination.name))
+                setDestinations(sortedData)
+                setFilteredDestinations(sortedData)
             } else {
                 setDestinations([])
+                setFilteredDestinations([])
             }
         } catch (error) {
             setError("Failed to load destinations. Please try again later.")
@@ -50,6 +53,40 @@ export default function DashboardPage() {
 
     const handleDestinationClick = (id: number) => {
         router.push(`/user/destinations/${id}`)
+    }
+
+    // Binary search function
+    const binarySearchByName = (arr: DestinationData[], target: string) => {
+        let left = 0
+        let right = arr.length - 1
+        target = target.toLowerCase()
+
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2)
+            const midName = arr[mid].destination.name.toLowerCase()
+
+            if (midName === target) {
+                return [arr[mid]] // Return the matched destination
+            } else if (midName < target) {
+                left = mid + 1
+            } else {
+                right = mid - 1
+            }
+        }
+        return [] // Return empty if not found
+    }
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+        setSearchQuery(value)
+
+        if (!value) {
+            setFilteredDestinations(destinations)
+            return
+        }
+
+        const results = binarySearchByName(destinations, value)
+        setFilteredDestinations(results)
     }
 
     return (
@@ -85,9 +122,16 @@ export default function DashboardPage() {
             <div className="max-w-7xl mx-auto px-4 py-12">
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold mb-2">Explore Destinations</h2>
-                    <p className="text-muted-foreground">
-                        Discover and book your next trekking adventure
-                    </p>
+                    <p className="text-muted-foreground">Discover and book your next trekking adventure</p>
+
+                    {/* Search Input */}
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        placeholder="Search destination by name..."
+                        className="mt-4 p-2 border rounded w-full max-w-md"
+                    />
                 </div>
 
                 {/* Error State */}
@@ -106,9 +150,9 @@ export default function DashboardPage() {
                 )}
 
                 {/* Destinations Grid */}
-                {!loading && !error && destinations.length > 0 && (
+                {!loading && !error && filteredDestinations.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {destinations.map((destination) => (
+                        {filteredDestinations.map((destination) => (
                             <div
                                 key={destination.destination.id}
                                 onClick={() => handleDestinationClick(destination.destination.id)}
@@ -119,7 +163,6 @@ export default function DashboardPage() {
                                     name={destination.destination.name}
                                     description={destination.destination.description}
                                     location={destination.destination.region}
-                                    price={destination.destination.id || 0}
                                     images={destination.image?.url ? [destination.image.url] : []}
                                 />
                             </div>
@@ -128,11 +171,9 @@ export default function DashboardPage() {
                 )}
 
                 {/* Empty State */}
-                {!loading && !error && destinations.length === 0 && (
+                {!loading && !error && filteredDestinations.length === 0 && (
                     <div className="text-center py-20">
-                        <p className="text-lg text-muted-foreground">
-                            No destinations available yet.
-                        </p>
+                        <p className="text-lg text-muted-foreground">No destinations found.</p>
                     </div>
                 )}
             </div>

@@ -57,7 +57,7 @@ export function SignupForm() {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            toast.success("Account created successfully!");
+            toast.success("Mail verification sent! Please check your email.");
             router.push("/auth/login");
         } catch (err: any) {
             console.error("Signup error:", err);

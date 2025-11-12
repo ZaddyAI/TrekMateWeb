@@ -64,6 +64,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                             <Link href="/admin/accomodations">
                                 <Button variant="ghost">Accomodations</Button>
                             </Link>
+                            <Link href="/admin/transportation">
+                                <Button variant="ghost">Transportation</Button>
+                            </Link>
                             <Link href="/admin/bookings">
                                 <Button variant="ghost">Bookings</Button>
                             </Link>

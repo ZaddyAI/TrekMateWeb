@@ -109,7 +109,7 @@ export default function AccomodationsPage() {
     };
     const deleteAccomodation = async (id: number) => {
         try {
-            const response = await api.delete(`/admin/accomodation/accomodation/${id}`);
+            const response = await api.delete(`/admin/accomodation/delete/${id}`);
             toast.success("Accommodation deleted successfully!");
             fetchAccomodations();
         } catch (err: any) {

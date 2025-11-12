@@ -14,10 +14,10 @@ export function BookingsList() {
     const [error, setError] = useState("")
 
     useEffect(() => {
-        fetchBookings()
+        fetchAccomodationBookings()
     }, [])
 
-    const fetchBookings = async () => {
+    const fetchAccomodationBookings = async () => {
         try {
             setLoading(true)
             const response = await api.get("/admin/booking/bookings")
@@ -31,7 +31,20 @@ export function BookingsList() {
             setLoading(false)
         }
     }
-
+    const fetchTransportationBookings = async () => {
+        try {
+            setLoading(true)
+            const response = await api.get("/admin/transportation/")
+            const bookingsData: BookingData[] = response.data
+            setBookings(bookingsData)
+            await fetchUserNames(bookingsData)
+        } catch (err: any) {
+            console.error("Error fetching bookings:", err)
+            setError(err.response?.data?.message || "Failed to fetch bookings")
+        } finally {
+            setLoading(false)
+        }
+    }
     const fetchUserNames = async (bookingsData: BookingData[]) => {
         try {
             const names: Record<number, string> = {}
