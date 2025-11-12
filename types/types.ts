@@ -46,3 +46,25 @@ export interface Accomodation {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface BookingData {
+  id: number;
+  userId: number;
+  accomodationId: number;
+  startingDate: Date;
+  endingDate: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+export interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  phone: string;
+  isValidEmail: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

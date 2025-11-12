@@ -29,8 +29,8 @@ export function LoginForm() {
         try {
             const response = await api.post("/login", { email, password });
             const token = response.data.token;
-            const name = response.data.userName;
-            const id = response.data.userId;
+            const name = response.data.name;
+            const id = response.data.id;
             const role = response.data.role;
             localStorage.setItem("token", token);
             localStorage.setItem("user", name);

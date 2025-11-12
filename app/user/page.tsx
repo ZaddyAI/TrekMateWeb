@@ -57,10 +57,19 @@ export default function DashboardPage() {
             {/* Header */}
             <header className="border-b bg-card">
                 <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold">Dashboard</h1>
-                        <p className="text-muted-foreground mt-1">Welcome back, {user}</p>
+                    <div className="flex items-center gap-8">
+                        <div className="text">
+                            <h1 className="text-3xl font-bold">Dashboard</h1>
+                            <p className="text-muted-foreground mt-1">Welcome back, {user}</p>
+                        </div>
+
+                        <div className="menus">
+                            <Link href="/user/booking" className="mr-4 text-sm font-medium hover:underline">
+                                My Bookings
+                            </Link>
+                        </div>
                     </div>
+
                     <Button
                         variant="outline"
                         onClick={handleLogout}
