@@ -3,15 +3,16 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Loader, LogOut, Calendar, DollarSign, MapPin } from "lucide-react"
+import { Loader, LogOut, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { Booking } from "@/types/types"
 import api from "@/lib/api"
+import { DestinationData } from "@/types/types"
+import { PublicDestinationCard } from "@/components/destinations/public-destination-card"
+import page from "./booking/page"
 
 export default function DashboardPage() {
     const router = useRouter()
-    const [bookings, setBookings] = useState<Booking[]>([])
+    const [destinations, setDestinations] = useState<DestinationData[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState("")
     const [user, setUser] = useState("Guest")
@@ -19,31 +20,36 @@ export default function DashboardPage() {
     useEffect(() => {
         const storedUser = localStorage.getItem("user")
         setUser(storedUser || "Guest")
-        fetchBookings()
+        fetchDestinations()
     }, [])
 
     const handleLogout = () => {
         localStorage.removeItem("token")
         localStorage.removeItem("user")
+        localStorage.removeItem("role")
         router.push("/auth/login")
     }
 
-    const fetchBookings = async () => {
+    const fetchDestinations = async () => {
         setLoading(true)
         setError("")
         try {
-            const localStorageId = localStorage.getItem("id")
-            const response = await api.get(`/user/booking/acc/user/${localStorageId}`)
+
+            const response = await api.get("/destinations");
             if (Array.isArray(response.data)) {
-                setBookings(response.data)
+                setDestinations(response.data)
             } else {
-                setBookings([])
+                setDestinations([])
             }
         } catch (error) {
-            setError("Failed to load bookings. Please try again later.")
+            setError("Failed to load destinations. Please try again later.")
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleDestinationClick = (id: number) => {
+        router.push(`/user/destinations/${id}`)
     }
 
     return (
@@ -66,101 +72,60 @@ export default function DashboardPage() {
                 </div>
             </header>
 
-            {/* Content */}
+            {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-12">
                 <div className="mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">Your Bookings</h2>
-                        <Link href="/user/destinations">
-                            <Button>Book Another Destination</Button>
-                        </Link>
-                    </div>
-
-                    {/* Error Message */}
-                    {error && (
-                        <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-6">
-                            {error}
-                        </div>
-                    )}
-
-                    {/* Loading State */}
-                    {loading && (
-                        <div className="flex justify-center py-12">
-                            <Loader className="animate-spin h-8 w-8" />
-                        </div>
-                    )}
-
-                    {/* Data Display */}
-                    {!loading && !error && bookings.length > 0 && (
-                        <div className="space-y-4">
-                            {bookings.map((booking) => (
-                                <Card key={booking.id} className="p-6">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg">
-                                                Booking #{booking.id}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {new Date(booking.createdAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-sm font-medium ${booking.status === "confirmed"
-                                                ? "bg-green-100 text-green-800"
-                                                : booking.status === "pending"
-                                                    ? "bg-yellow-100 text-yellow-800"
-                                                    : "bg-red-100 text-red-800"
-                                                }`}
-                                        >
-                                            {booking.status}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="flex items-center gap-3">
-                                            <Calendar className="w-5 h-5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Check-in</p>
-                                                <p className="font-semibold">
-                                                    {new Date(booking.checkInDate).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <Calendar className="w-5 h-5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Check-out</p>
-                                                <p className="font-semibold">
-                                                    {new Date(booking.checkOutDate).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <DollarSign className="w-5 h-5 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Total Price</p>
-                                                <p className="font-semibold">${booking.totalPrice}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Empty Data State */}
-                    {!loading && !error && bookings.length === 0 && (
-                        <Card className="p-12 text-center">
-                            <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground mb-4">
-                                You haven’t made any bookings yet.
-                            </p>
-                            <Link href="/user/destinations">
-                                <Button>Browse Destinations</Button>
-                            </Link>
-                        </Card>
-                    )}
+                    <h2 className="text-2xl font-bold mb-2">Explore Destinations</h2>
+                    <p className="text-muted-foreground">
+                        Discover and book your next trekking adventure
+                    </p>
                 </div>
+
+                {/* Error State */}
+                {error && (
+                    <div className="flex items-center gap-3 bg-destructive/10 border border-destructive p-4 rounded-lg text-destructive mb-6">
+                        <AlertCircle className="h-5 w-5 shrink-0" />
+                        <p>{error}</p>
+                    </div>
+                )}
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex justify-center py-20">
+                        <Loader className="animate-spin h-8 w-8" />
+                    </div>
+                )}
+
+                {/* Destinations Grid */}
+                {!loading && !error && destinations.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {destinations.map((destination) => (
+                            <div
+                                key={destination.destination.id}
+                                onClick={() => handleDestinationClick(destination.destination.id)}
+                                className="cursor-pointer transition hover:scale-[1.02]"
+                            >
+                                <PublicDestinationCard
+                                    id={destination.destination.id}
+                                    name={destination.destination.name}
+                                    description={destination.destination.description}
+                                    location={destination.destination.region}
+                                    price={destination.destination.id || 0}
+                                    images={destination.image?.url ? [destination.image.url] : []}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && destinations.length === 0 && (
+                    <div className="text-center py-20">
+                        <p className="text-lg text-muted-foreground">
+                            No destinations available yet.
+                        </p>
+                    </div>
+                )}
             </div>
         </main>
     )

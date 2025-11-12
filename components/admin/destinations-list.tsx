@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import api from "@/lib/api";
-import { DestinationsData } from "@/types/types";
+import { DestinationData } from "@/types/types";
 import {
     Dialog,
     DialogContent,
@@ -17,10 +17,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader } from "lucide-react";
-import { toast } from "react-toast";
+import { toast } from "react-toastify";
 
 export function DestinationsList() {
-    const [destinations, setDestinations] = useState<DestinationsData[]>([]);
+    const [destinations, setDestinations] = useState<DestinationData[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -44,7 +44,7 @@ export function DestinationsList() {
         setLoading(true);
         setError("");
         try {
-            const response = await api.get("/admin/destination/get");
+            const response = await api.get("/destinations");
             setDestinations(response.data);
         } catch (error) {
             setError("Failed to load destinations. Please try again later.");
@@ -68,7 +68,7 @@ export function DestinationsList() {
 
             if (files) {
                 Array.from(files).slice(0, 5).forEach((file) => {
-                    data.append("images", file); // match backend
+                    data.append("images", file);
                 });
             }
 
@@ -97,7 +97,15 @@ export function DestinationsList() {
             setFormLoading(false);
         }
     };
-
+    const deleteDestination = async (id: number) => {
+        try {
+            const response = await api.delete(`/admin/destination/destination/${id}`);
+            toast.success("Destination deleted successfully!");
+            fetchDestinations();
+        } catch (err: any) {
+            toast.error(err.message || "Failed to delete destination.");
+        }
+    };
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -238,9 +246,9 @@ export function DestinationsList() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {destinations.map((destination) => (
                         <Card key={destination.destination.id} className="overflow-hidden">
-                            {destination.image?.[0] && (
+                            {destination.image && (
                                 <img
-                                    src={destination.image[0] || "/placeholder.svg"}
+                                    src={destination.image.url || "/placeholder.svg"}
                                     alt={destination.destination.name}
                                     className="w-full h-48 object-cover"
                                 />
@@ -259,7 +267,7 @@ export function DestinationsList() {
                                     <span className="font-bold text-lg">
                                         {destination.destination.region}
                                     </span>
-                                    <Button variant="destructive" size="sm">
+                                    <Button onClick={() => deleteDestination(destination.destination.id)} variant="destructive" size="sm">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </div>
