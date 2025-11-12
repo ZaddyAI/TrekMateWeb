@@ -1,3 +1,4 @@
+// types/types.ts
 export interface Booking {
   id: number;
   destinationId: string;
@@ -7,6 +8,7 @@ export interface Booking {
   status: "pending" | "confirmed" | "cancelled";
   createdAt: string;
 }
+
 export interface DestinationData {
   destination: Destination;
   image: Image | null;
@@ -33,6 +35,7 @@ export interface Image {
   createdAt: Date;
   updatedAt: Date;
 }
+
 export interface AccomodationData {
   accomodation: Accomodation;
   image: Image;
@@ -58,6 +61,7 @@ export interface BookingData {
   createdAt: Date;
   updatedAt: Date;
 }
+
 export interface UserData {
   id: number;
   name: string;
@@ -83,4 +87,56 @@ export interface Transportation {
   vechileTypeId: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AccomodationBookingData {
+  accomodation_booking: AccomodationBooking;
+  user: UserData;
+}
+
+export interface AccomodationBooking {
+  id: number;
+  userId: number;
+  accomodationId: number;
+  startingDate: Date;
+  endingDate: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TransportationBookingData {
+  transportation_booking: TransportationBooking;
+  user: UserData;
+}
+
+export interface TransportationBooking {
+  id: number;
+  userId: number;
+  transportationId: number;
+  dispatchDate: Date;
+  returnDate: Date;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type BookingType = "accommodation" | "transportation";
+
+export interface CombinedBooking {
+  id: number;
+  type: BookingType;
+  user: UserData;
+  status: "pending" | "conformed" | "cancelled";
+  createdAt: Date;
+
+  // Accommodation specific
+  accomodationId?: number;
+  startingDate?: Date;
+  endingDate?: Date;
+
+  // Transportation specific
+  transportationId?: number;
+  dispatchDate?: Date;
+  returnDate?: Date;
 }
