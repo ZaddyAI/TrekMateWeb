@@ -218,7 +218,7 @@ export default function DestinationDetailsPage() {
                                             <h4 className="font-medium">{dest.accomodation.name}</h4>
                                             <p className="text-sm text-muted-foreground">{dest.accomodation.description}</p>
                                             <div className="flex items-center justify-between mt-4">
-                                                <span className="text-2xl font-bold text-green-600">${dest.accomodation.price}</span>
+                                                <span className="text-2xl font-bold text-green-600">Rs{dest.accomodation.price}</span>
                                                 <span className="text-sm text-muted-foreground">per night</span>
                                             </div>
                                         </div>
@@ -240,7 +240,7 @@ export default function DestinationDetailsPage() {
                                                 <span className="text-muted-foreground">{dest.transportation.grade}</span>
                                             </div>
                                             <div className="flex items-center justify-between mt-4">
-                                                <span className="text-2xl font-bold text-green-600">${dest.transportation.price}</span>
+                                                <span className="text-2xl font-bold text-green-600">Rs{dest.transportation.price}</span>
                                                 <span className="text-sm text-muted-foreground">per trip</span>
                                             </div>
                                         </div>
@@ -326,7 +326,7 @@ export default function DestinationDetailsPage() {
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-600">Price:</span>
                                             <span className="text-lg font-bold text-green-600">
-                                                ${bookingForm.bookingType === 'accommodation' ? dest.accomodation?.price : dest.transportation?.price}
+                                                Rs{bookingForm.bookingType === 'accommodation' ? dest.accomodation?.price : dest.transportation?.price}
                                             </span>
                                         </div>
                                     </div>

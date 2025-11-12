@@ -464,7 +464,7 @@ export default function TransportationPage() {
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="font-semibold">
-                                                        ${item.transportation.price}
+                                                        Rs{item.transportation.price}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="text-sm text-gray-500">

@@ -335,7 +335,7 @@ export default function BookingsPage() {
                                                     </p>
                                                 </div>
                                                 <div className="text-lg font-bold text-blue-600">
-                                                    ${booking.type === 'accommodation'
+                                                    Rs{booking.type === 'accommodation'
                                                         ? booking.accommodationData?.details?.accomodation?.price || 'N/A'
                                                         : booking.transportationData?.details?.transportation?.price || 'N/A'
                                                     }

@@ -238,7 +238,7 @@ export default function AccomodationsPage() {
                                     {acc.accomodation.description}
                                 </p>
                                 <p className="mt-2 font-semibold text-primary">
-                                    ${acc.accomodation.price}
+                                    Rs{acc.accomodation.price}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                     Destination: {checkDestinationsNameByID(acc.accomodation.destinationId) || "N/A"}
